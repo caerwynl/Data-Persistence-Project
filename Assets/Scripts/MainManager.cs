@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class MainManager : MonoBehaviour
 {
@@ -11,6 +14,7 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text bestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -19,9 +23,17 @@ public class MainManager : MonoBehaviour
     private bool m_GameOver = false;
 
     
+    
     // Start is called before the first frame update
     void Start()
     {
+       
+        if (PersistenceManager.Instance != null)
+        {
+            bestScoreText.text = "Best Score : " + 
+            PersistenceManager.Instance.bestPlayer +
+            " : "  + PersistenceManager.Instance.bestScore;
+        }
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -58,19 +70,51 @@ public class MainManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            } else
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                Exit();
             }
         }
     }
 
     void AddPoint(int point)
     {
+
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+        if (PersistenceManager.Instance != null)
+        {
+            if (PersistenceManager.Instance.bestScore < m_Points)
+            {
+                PersistenceManager.Instance.bestPlayer = PersistenceManager.Instance.currentPlayer;
+                PersistenceManager.Instance.bestScore = m_Points;
+                bestScoreText.text = "Best Score : " +
+                    PersistenceManager.Instance.bestPlayer +
+                    " : " + PersistenceManager.Instance.bestScore;
+
+            }
+        }
     }
 
     public void GameOver()
     {
+        SaveScore();
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
+    public void Exit()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit();
+#endif
+    }
+
+    public void SaveScore()
+    {
+        PersistenceManager.Instance.SaveScore();
+    }
+
 }
